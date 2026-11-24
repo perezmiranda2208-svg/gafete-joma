@@ -236,7 +236,12 @@
 
   // ---- Service worker (para abrir sin internet) ----
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    // Si llega una versión nueva de la app mientras está abierta, se recarga una vez para no mezclar versiones
+    var yaControlada = !!navigator.serviceWorker.controller, recargada = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (yaControlada && !recargada && !$('grande').classList.contains('abierto')) { recargada = true; location.reload(); }
+    });
+    navigator.serviceWorker.register('sw.js').then(function (reg) { try { reg.update(); } catch (e) {} }).catch(function () {});
     navigator.serviceWorker.addEventListener('controllerchange', function () { if (guardado) estadoGuardado(guardado); });
   }
 
