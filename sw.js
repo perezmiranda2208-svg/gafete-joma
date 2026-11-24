@@ -1,6 +1,6 @@
 /* Service worker del gafete: guarda la app en el teléfono para que abra sin internet.
    Al cambiar cualquier archivo de la app, subir VERSION para que los teléfonos descarguen la nueva. */
-var VERSION = 'gafete-v1';
+var VERSION = 'gafete-v3';
 var ARCHIVOS = ['./', 'index.html', 'app.js', 'qrcode.min.js', 'logo.jpg', 'manifest.webmanifest', 'icono-192.png', 'icono-512.png', 'icono-apple.png'];
 var FUENTES = 'gafete-fuentes';
 

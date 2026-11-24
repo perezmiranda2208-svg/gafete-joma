@@ -58,10 +58,23 @@
   }
 
   // ---- Pintar ----
-  function qrSvg(texto) {
-    if (typeof qrcode !== 'function') return '';
-    try { var q = qrcode(0, 'M'); q.addData(String(texto)); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
-    catch (e) { return ''; }
+  // El QR se dibuja en un lienzo con cuadritos de pixeles enteros (sin rayitas entre ellos) y margen blanco de 4 cuadritos,
+  // para que los lectores de la entrada lo lean bien en la pantalla del teléfono.
+  function dibujarQr(caja, texto) {
+    caja.innerHTML = '';
+    if (typeof qrcode !== 'function') return;
+    var q;
+    try { q = qrcode(0, 'M'); q.addData(String(texto)); q.make(); } catch (e) { return; }
+    var n = q.getModuleCount(), margen = 4, total = n + margen * 2;
+    var lado = Math.max(caja.clientWidth, 120) * (window.devicePixelRatio || 1);
+    var celda = Math.max(1, Math.floor(lado / total)), px = celda * total;
+    var c = document.createElement('canvas');
+    c.width = px; c.height = px;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, px, px);
+    ctx.fillStyle = '#000000';
+    for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) ctx.fillRect((k + margen) * celda, (r + margen) * celda, celda, celda);
+    caja.appendChild(c);
   }
 
   function mostrarPase(d) {
@@ -75,12 +88,16 @@
     $('cLugar').hidden = !d.lugar;
     if (!d.seccion && d.lugar) $('cLugar').className = 'ancho'; else $('cLugar').className = '';
     if (d.seccion && !d.lugar) $('cSeccion').className = 'ancho'; else $('cSeccion').className = '';
-    var svg = qrSvg(d.codigo);
-    $('pQr').innerHTML = svg;
-    $('gQr').innerHTML = svg;
+    codigoActual = d.codigo;
+    dibujarQr($('pQr'), d.codigo);
     $('pQr').setAttribute('role', 'img');
     $('pQr').setAttribute('aria-label', 'Código QR ' + d.codigo);
     $('pCodigo').textContent = d.codigo;
+    // Reverso: código de turno extra (JOMAX + número). El registro lo toma como entrada con turno extra.
+    $('xNombre').textContent = d.nombre;
+    $('xNumero').textContent = d.numero;
+    $('xCodigo').textContent = codigoExtra(d);
+    dibujarQr($('xQr'), codigoExtra(d));
     $('gCodigo').textContent = d.codigo;
     $('gNombre').textContent = d.nombre;
     document.title = 'Gafete · ' + d.nombre;
@@ -155,8 +172,39 @@
   $('btnReintentar').addEventListener('click', iniciar);
 
   // ---- Código en grande ----
-  $('btnQr').addEventListener('click', function () { $('grande').classList.add('abierto'); $('grande').focus(); });
-  $('grande').addEventListener('click', function () { $('grande').classList.remove('abierto'); $('btnQr').focus(); });
+  var codigoActual = '';
+  var volteado = false;
+  function codigoExtra(d) { return 'JOMAX' + d.numero; }
+  function codigoVisible() { return volteado && guardado ? codigoExtra(guardado) : codigoActual; }
+  function abrirGrande() {
+    var g = $('grande');
+    g.classList.toggle('extra', volteado);
+    $('gSello').hidden = !volteado;
+    g.setAttribute('aria-label', (volteado ? 'Código de turno extra. ' : '') + 'Toca para cerrar');
+    g.classList.add('abierto');
+    $('gCodigo').textContent = codigoVisible();
+    dibujarQr($('gQr'), codigoVisible());
+    g.focus();
+  }
+  $('btnQr').addEventListener('click', abrirGrande);
+  $('btnQrExtra').addEventListener('click', abrirGrande);
+  $('btnVoltear').addEventListener('click', function () {
+    volteado = !volteado;
+    $('giro').classList.toggle('volteado', volteado);
+    $('btnVoltear').setAttribute('aria-pressed', volteado ? 'true' : 'false');
+    $('btnVoltearTexto').textContent = volteado ? 'Voltear: gafete normal' : 'Voltear: turno extra';
+    $('caraFrente').setAttribute('aria-hidden', volteado ? 'true' : 'false');
+    $('caraReverso').setAttribute('aria-hidden', volteado ? 'false' : 'true');
+    $('btnQr').tabIndex = volteado ? -1 : 0;
+    $('btnQrExtra').tabIndex = volteado ? 0 : -1;
+  });
+  window.addEventListener('resize', function () {
+    if (!codigoActual) return;
+    dibujarQr($('pQr'), codigoActual);
+    if (guardado) dibujarQr($('xQr'), codigoExtra(guardado));
+    if ($('grande').classList.contains('abierto')) dibujarQr($('gQr'), codigoVisible());
+  });
+  $('grande').addEventListener('click', function () { $('grande').classList.remove('abierto'); (volteado ? $('btnQrExtra') : $('btnQr')).focus(); });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') $('grande').classList.remove('abierto'); });
 
   // ---- Pantalla encendida mientras se ve el gafete ----
