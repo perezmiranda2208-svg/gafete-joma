@@ -102,7 +102,47 @@
     $('gNombre').textContent = d.nombre;
     document.title = 'Gafete · ' + d.nombre;
     pedirPantallaEncendida();
+    pintarSaludo(d);
+    arrancarReloj();
   }
+
+  // ---- Vida: saludo con su nombre, reloj en vivo (prueba que no es una captura de pantalla) y brillo que sigue al teléfono ----
+  // En EMPLEADOS el nombre va con apellidos primero (MIRANDA PEREZ JOSUE YAHIR): el nombre de pila es la tercera palabra.
+  function nombrePila(nombre) {
+    var p = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+    var n = p.length >= 3 ? p[2] : (p[p.length - 1] || '');
+    return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
+  }
+  function pintarSaludo(d) {
+    var h = new Date().getHours();
+    var hola = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
+    var pila = nombrePila(d.nombre);
+    $('saludoHola').textContent = hola + (pila ? ', ' + pila : '');
+    try { $('saludoFecha').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) {}
+  }
+  var relojActivo = null;
+  function arrancarReloj() {
+    function tic() {
+      var t = '';
+      try { t = new Date().toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', second: '2-digit' }); } catch (e) {}
+      var r = document.querySelectorAll('[data-reloj]');
+      for (var i = 0; i < r.length; i++) r[i].textContent = t;
+      if (guardado && new Date().getSeconds() === 0) pintarSaludo(guardado);
+    }
+    tic();
+    if (!relojActivo) relojActivo = setInterval(tic, 1000);
+  }
+  // Android: el brillo se mueve al inclinar el teléfono (en iPhone pide permiso, así que ahí solo se mueve solo)
+  var ultimoGiro = 0;
+  window.addEventListener('deviceorientation', function (ev) {
+    if (ev.gamma == null) return;
+    var ahora = Date.now();
+    if (ahora - ultimoGiro < 40) return;
+    ultimoGiro = ahora;
+    var x = Math.max(-30, Math.min(30, ev.gamma));
+    $('giro').classList.add('inclinado');
+    $('giro').style.setProperty('--bx', (50 - x * 2.6) + '%');
+  });
 
   function mostrarAviso(titulo, texto, reintentar) {
     $('vistaPase').hidden = true;
@@ -190,6 +230,7 @@
   $('btnQrExtra').addEventListener('click', abrirGrande);
   $('btnVoltear').addEventListener('click', function () {
     volteado = !volteado;
+    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
     $('giro').classList.toggle('volteado', volteado);
     $('btnVoltear').setAttribute('aria-pressed', volteado ? 'true' : 'false');
     $('btnVoltearTexto').textContent = volteado ? 'Voltear: gafete normal' : 'Voltear: turno extra';

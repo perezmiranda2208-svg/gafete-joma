@@ -50,7 +50,10 @@
   .giro{ width:100%; max-width:380px; perspective:1400px; }
   .giro-int{ display:grid; transition:transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); transform-style:preserve-3d; }
   .giro.volteado .giro-int{ transform:rotateY(180deg); }
-  .cara{ grid-area:1 / 1; -webkit-backface-visibility:hidden; backface-visibility:hidden; }
+  .cara{ grid-area:1 / 1; -webkit-backface-visibility:hidden; backface-visibility:hidden; display:flex; flex-direction:column; }
+  .cara *{ -webkit-backface-visibility:hidden; backface-visibility:hidden; }
+  .cara .pase-qr{ flex:1 1 auto; }
+  .cara .sello-extra{ align-self:flex-start; }
   .cara.reverso{ transform:rotateY(180deg); background:linear-gradient(180deg, #22345e 0%, var(--azul) 100%); }
   .sello-extra{ display:inline-block; margin:0 16px; padding:4px 10px; border-radius:999px; background:#f0c05a; color:#2a1d00; font-weight:800; font-size:12px; letter-spacing:0.14em; }
   .nota-extra{ padding:6px 16px 12px; font-size:13px; line-height:1.35; opacity:0.92; }
@@ -60,6 +63,33 @@
   .grande.extra{ background:#fff; box-shadow:inset 0 0 0 14px #f0c05a; }
   .grande .sello-extra{ margin:0; }
   @media (prefers-reduced-motion: reduce){ .giro-int{ transition:none; } }
+
+  /* ---- Vida: saludo, reloj en vivo, brillo holográfico, entrada. El QR (parte blanca) nunca se mueve, para que el lector lo lea. ---- */
+  .saludo{ width:100%; max-width:380px; margin:0 auto 10px; padding:0 4px; }
+  .saludo-hola{ font-weight:800; font-size:21px; line-height:1.2; }
+  .saludo-fecha{ font-size:13px; opacity:0.75; margin-top:2px; }
+  .saludo-fecha::first-letter{ text-transform:uppercase; }
+  .pase{ position:relative; isolation:isolate; }
+  .pase > *:not(.brillo){ position:relative; z-index:1; }
+  .brillo{ position:absolute; inset:0; z-index:0; pointer-events:none;
+    background:linear-gradient(115deg, transparent 28%, rgba(255,255,255,0.20) 42%, rgba(255,220,240,0.10) 48%, rgba(180,220,255,0.14) 54%, transparent 66%);
+    background-size:300% 100%; background-position:var(--bx, 120%) 0; animation:barrido 7s ease-in-out infinite; }
+  .inclinado .brillo{ animation:none; }
+  @keyframes barrido{ 0%{ background-position:130% 0; } 55%{ background-position:-30% 0; } 100%{ background-position:-30% 0; } }
+  .vivo{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 16px 12px; padding:7px 12px; border-radius:12px;
+    background:rgba(0,0,0,0.24); font-size:13px; font-weight:600; overflow:hidden; }
+  .vivo::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+    background:linear-gradient(90deg, transparent, #f0c05a, #fff, #f0c05a, transparent); background-size:50% 100%; background-repeat:no-repeat;
+    animation:franja 2.4s linear infinite; }
+  @keyframes franja{ from{ background-position:-60% 0; } to{ background-position:160% 0; } }
+  .vivo-estado{ display:flex; align-items:center; gap:7px; letter-spacing:0.06em; text-transform:uppercase; font-size:12px; }
+  .vivo-punto{ width:8px; height:8px; border-radius:50%; background:#6ad19a; box-shadow:0 0 0 0 rgba(106,209,154,0.7); animation:latido 1.6s ease-out infinite; }
+  @keyframes latido{ 0%{ box-shadow:0 0 0 0 rgba(106,209,154,0.7); } 100%{ box-shadow:0 0 0 9px rgba(106,209,154,0); } }
+  .vivo-hora{ font-family:'Fira Code', Consolas, monospace; font-variant-numeric:tabular-nums; font-size:14px; }
+  .giro{ animation:entrada 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .saludo{ animation:entrada 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes entrada{ from{ opacity:0; transform:translateY(14px) scale(0.98); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ .brillo, .vivo::after, .vivo-punto, .giro, .saludo{ animation:none; } }
 
   /* Estado y acciones */
   .estado{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; opacity:0.9; min-height:20px; }
@@ -92,8 +122,10 @@
 <body>
 <main class="pantalla">
   <div id="vistaPase" hidden>
+    <div class="saludo"><div class="saludo-hola" id="saludoHola"></div><div class="saludo-fecha" id="saludoFecha"></div></div>
     <div class="giro" id="giro"><div class="giro-int">
     <article class="pase cara" id="caraFrente" aria-label="Gafete digital">
+      <span class="brillo" aria-hidden="true"></span>
       <div class="pase-cab">
         <img src="logo.jpg" alt="">
         <div class="pase-marca">JOMA<br>COMEDORES</div>
@@ -104,6 +136,7 @@
         <div id="cSeccion"><div class="etq">Área</div><div class="val" id="pSeccion"></div></div>
         <div id="cLugar"><div class="etq">Lugar</div><div class="val" id="pLugar"></div></div>
       </div>
+      <div class="vivo"><span class="vivo-estado"><span class="vivo-punto"></span>Vigente</span><span class="vivo-hora" data-reloj></span></div>
       <button type="button" class="pase-qr" id="btnQr" aria-label="Mostrar el código en grande">
         <div class="qr" id="pQr"></div>
         <div class="codigo" id="pCodigo"></div>
@@ -111,6 +144,7 @@
       </button>
     </article>
     <article class="pase cara reverso" id="caraReverso" aria-label="Código de turno extra" aria-hidden="true">
+      <span class="brillo" aria-hidden="true"></span>
       <div class="pase-cab">
         <img src="logo.jpg" alt="">
         <div class="pase-marca">JOMA<br>COMEDORES</div>
@@ -119,6 +153,7 @@
       <div class="sello-extra">TURNO EXTRA</div>
       <div class="pase-nombre"><div class="etq">Nombre</div><div class="val" id="xNombre"></div></div>
       <div class="nota-extra">Usa este código solo al <b>llegar</b> a cubrir un turno extra. Tu encargado lo revisa.</div>
+      <div class="vivo"><span class="vivo-estado"><span class="vivo-punto"></span>Vigente</span><span class="vivo-hora" data-reloj></span></div>
       <button type="button" class="pase-qr" id="btnQrExtra" aria-label="Mostrar en grande el código de turno extra" tabindex="-1">
         <div class="qr" id="xQr"></div>
         <div class="codigo" id="xCodigo"></div>
@@ -160,6 +195,6 @@
 </button>
 
 <script src="qrcode.min.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

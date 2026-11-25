@@ -2,7 +2,7 @@
    Al cambiar cualquier archivo de la app, subir VERSION (y el ?v= de app.js en index.html) para que los teléfonos descarguen la nueva.
    Con internet siempre pide la versión nueva (hasta 4 s); sin internet usa la guardada. Así la página y el programa nunca quedan
    de versiones distintas (antes el teléfono podía mostrar el botón nuevo con el programa viejo). */
-var VERSION = 'gafete-v4';
+var VERSION = 'gafete-v5';
 var ARCHIVOS = ['./', 'index.html', 'app.js', 'qrcode.min.js', 'logo.jpg', 'manifest.webmanifest', 'icono-192.png', 'icono-512.png', 'icono-apple.png'];
 var FUENTES = 'gafete-fuentes';
 var ESPERA_RED_MS = 4000;
